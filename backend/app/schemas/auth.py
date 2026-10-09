@@ -25,6 +25,9 @@ class UserRegisterRequest(BaseModel):
     year: Optional[int] = 4
     semester: Optional[int] = 7
     section: Optional[str] = "A"
+    cgpa: Optional[float] = 7.5
+    backlogs: Optional[int] = 0
+    attendance: Optional[float] = 85.0
 
 class UserResponse(BaseModel):
     id: int

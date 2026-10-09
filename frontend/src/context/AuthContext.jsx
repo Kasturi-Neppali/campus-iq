@@ -24,7 +24,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await apiClient.post('/auth/login', { email, password });
+    const formData = new URLSearchParams();
+    formData.append('username', email);
+    formData.append('password', password);
+    const response = await apiClient.post('/auth/login', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
     const data = response.data;
     const userData = {
       user_id: data.user_id,
@@ -41,6 +48,11 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
+  const register = async (userData) => {
+    const response = await apiClient.post('/auth/register', userData);
+    return response.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('campusiq_token');
     localStorage.removeItem('campusiq_user');
@@ -49,7 +61,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, role: user?.role, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, role: user?.role, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

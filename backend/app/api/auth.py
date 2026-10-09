@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -42,8 +42,8 @@ def require_role(allowed_roles: List[str]):
     return role_checker
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+def login(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == request.username.lower().strip()).first()
     if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -96,8 +96,8 @@ def register(request: UserRegisterRequest, db: Session = Depends(get_db)):
             year=request.year or 4,
             semester=request.semester or 7,
             section=request.section or "A",
-            cgpa=7.5,
-            backlogs=0
+            cgpa=request.cgpa,
+            backlogs=request.backlogs
         )
         db.add(student)
     elif new_user.role == "faculty":
