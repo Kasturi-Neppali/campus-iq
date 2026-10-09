@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import CampusAIChat from './components/CampusAIChat';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
 import FacultyDashboard from './pages/FacultyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -10,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 function AppContent() {
   const { user, loading } = useAuth();
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
 
   if (loading) {
     return (
@@ -20,7 +22,11 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login />;
+    return showRegister ? (
+      <Register onSwitch={() => setShowRegister(false)} />
+    ) : (
+      <Login onSwitch={() => setShowRegister(true)} />
+    );
   }
 
   const renderDashboard = () => {

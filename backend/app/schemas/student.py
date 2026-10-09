@@ -1,6 +1,22 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
+class SubjectEvaluation(BaseModel):
+    subject_code: str
+    subject_name: str
+    credits: int = 3
+    classes_attended: int
+    total_classes: int
+    internal_marks: float
+    assignment_marks: float
+    final_exam_marks: float
+
+class StudentProfileUpdate(BaseModel):
+    cgpa: float
+    attendance_pct: float
+    backlogs: int
+    subjects: Optional[List[SubjectEvaluation]] = None
+
 class SkillCreate(BaseModel):
     skill_name: str
     proficiency: str = "Intermediate"

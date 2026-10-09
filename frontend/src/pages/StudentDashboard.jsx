@@ -11,6 +11,8 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from 'recharts';
 
+import AcademicOnboardingModal from '../components/AcademicOnboardingModal';
+
 export default function StudentDashboard({ onOpenAI }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,12 +32,20 @@ export default function StudentDashboard({ onOpenAI }) {
   const [newProjTitle, setNewProjTitle] = useState('');
   const [newProjTech, setNewProjTech] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
+  
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const fetchDashboard = async () => {
     try {
       setLoading(true);
       const res = await apiClient.get('/student/dashboard');
       setData(res.data);
+      
+      // Auto-open onboarding if no subjects exist yet (which means attendance is 0 and no data)
+      if (res.data.subjects?.length === 0) {
+        setIsOnboardingOpen(true);
+      }
+
       // Initialize what-if marks
       const marksMap = {};
       res.data.subjects?.forEach((s) => {
@@ -149,6 +159,12 @@ export default function StudentDashboard({ onOpenAI }) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <AcademicOnboardingModal 
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onSave={fetchDashboard}
+        defaultData={data?.stats}
+      />
       {/* Student Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-6 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
         <div>
@@ -164,6 +180,12 @@ export default function StudentDashboard({ onOpenAI }) {
         </div>
 
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsOnboardingOpen(true)}
+            className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition"
+          >
+            Update Info
+          </button>
           <RiskBadge
             riskLevel={stats?.risk_level}
             riskScore={stats?.risk_score}

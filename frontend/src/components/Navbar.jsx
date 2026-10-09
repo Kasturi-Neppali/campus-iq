@@ -61,7 +61,7 @@ export default function Navbar({ onOpenAI }) {
               onClick={() => handleQuickSwitch('student')}
               className={`px-2.5 py-1 rounded font-medium transition ${user?.role === 'student' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              🎓 Student (Kasturi)
+              🎓 Student
             </button>
             <button
               onClick={() => handleQuickSwitch('faculty')}

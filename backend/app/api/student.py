@@ -10,7 +10,7 @@ from app.models.academic import AcademicRecord, Subject
 from app.models.faculty import FacultyRemark
 from app.models.placement import PlacementProfile
 from app.models.risk import RiskAssessment
-from app.schemas.student import SkillCreate, ProjectCreate, CertificationCreate
+from app.schemas.student import SkillCreate, ProjectCreate, CertificationCreate, StudentProfileUpdate
 from app.services.risk_engine import risk_engine
 from app.services.placement_engine import placement_engine
 
@@ -285,3 +285,75 @@ def get_student_remarks(
         }
         for r in remarks
     ]
+
+@router.post("/update_academic_profile")
+def update_academic_profile(
+    payload: StudentProfileUpdate,
+    current_user: User = Depends(require_role(["student"])),
+    db: Session = Depends(get_db)
+):
+    student = _get_student(current_user, db)
+    
+    student.cgpa = payload.cgpa
+    student.backlogs = payload.backlogs
+    
+    # Simple logic to generate/update dummy academic records based on requested attendance
+    # If no records exist, we pull some subjects and create them.
+    # If they exist, we just update classes_attended.
+    records = db.query(AcademicRecord).filter(AcademicRecord.student_id == student.id).all()
+    
+    if payload.subjects and len(payload.subjects) > 0:
+        # User provided explicit subject evaluations
+        # Delete old records
+        db.query(AcademicRecord).filter(AcademicRecord.student_id == student.id).delete()
+        for sub_eval in payload.subjects:
+            # Find or create subject
+            subject = db.query(Subject).filter(Subject.code == sub_eval.subject_code.upper()).first()
+            if not subject:
+                subject = Subject(
+                    name=sub_eval.subject_name,
+                    code=sub_eval.subject_code.upper(),
+                    department=student.department,
+                    semester=student.semester,
+                    credits=sub_eval.credits
+                )
+                db.add(subject)
+                db.flush()
+                
+            new_record = AcademicRecord(
+                student_id=student.id,
+                subject_id=subject.id,
+                semester=student.semester,
+                classes_attended=sub_eval.classes_attended,
+                total_classes=sub_eval.total_classes,
+                internal_marks=sub_eval.internal_marks,
+                assignment_marks=sub_eval.assignment_marks,
+                final_exam_marks=sub_eval.final_exam_marks
+            )
+            db.add(new_record)
+    else:
+        # Fallback to dummy generation if no subjects explicitly provided
+        target_pct = max(0.0, min(100.0, payload.attendance_pct))
+        target_attended = int(40 * (target_pct / 100.0))
+    
+        if not records:
+            subjects = db.query(Subject).limit(5).all()
+            for sub in subjects:
+                new_record = AcademicRecord(
+                    student_id=student.id,
+                    subject_id=sub.id,
+                    semester=student.semester,
+                    classes_attended=target_attended,
+                    total_classes=40,
+                    internal_marks=(payload.cgpa / 10.0) * 45.0,
+                    assignment_marks=20.0,
+                    final_exam_marks=(payload.cgpa / 10.0) * 85.0
+                )
+                db.add(new_record)
+        else:
+            for r in records:
+                r.total_classes = 40
+                r.classes_attended = target_attended
+
+    db.commit()
+    return {"message": "Profile updated successfully"}
